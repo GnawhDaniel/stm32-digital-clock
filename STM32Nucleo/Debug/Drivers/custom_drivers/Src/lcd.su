@@ -1,0 +1,9 @@
+../Drivers/custom_drivers/Src/lcd.c:16:6:lcd_send_command	16	static
+../Drivers/custom_drivers/Src/lcd.c:27:6:lcd_print_char	16	static
+../Drivers/custom_drivers/Src/lcd.c:37:6:lcd_print_string	16	static
+../Drivers/custom_drivers/Src/lcd.c:47:6:lcd_display_clear	8	static
+../Drivers/custom_drivers/Src/lcd.c:55:6:lcd_display_return_home	8	static
+../Drivers/custom_drivers/Src/lcd.c:62:6:lcd_set_cursor	16	static
+../Drivers/custom_drivers/Src/lcd.c:81:6:lcd_init	32	static
+../Drivers/custom_drivers/Src/lcd.c:148:13:write_4_bits	16	static
+../Drivers/custom_drivers/Src/lcd.c:164:13:lcd_enable	8	static

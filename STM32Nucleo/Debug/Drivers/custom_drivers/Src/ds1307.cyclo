@@ -1,0 +1,9 @@
+../Drivers/custom_drivers/Src/ds1307.c:23:9:ds1307_init	1
+../Drivers/custom_drivers/Src/ds1307.c:39:6:ds1307_set_current_time	3
+../Drivers/custom_drivers/Src/ds1307.c:63:6:ds1307_get_current_time	2
+../Drivers/custom_drivers/Src/ds1307.c:87:6:ds1307_set_current_date	1
+../Drivers/custom_drivers/Src/ds1307.c:97:6:ds1307_get_current_date	1
+../Drivers/custom_drivers/Src/ds1307.c:105:13:ds1307_write	1
+../Drivers/custom_drivers/Src/ds1307.c:122:16:ds1307_read	1
+../Drivers/custom_drivers/Src/ds1307.c:139:16:binary_to_bcd	2
+../Drivers/custom_drivers/Src/ds1307.c:155:16:bcd_to_binary	1
