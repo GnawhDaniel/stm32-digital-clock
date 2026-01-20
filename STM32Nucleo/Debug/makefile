@@ -35,34 +35,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := wifi-stm32nucleo
+BUILD_ARTIFACT_NAME := STM32Nucleo
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-wifi-stm32nucleo.elf \
+STM32Nucleo.elf \
 
 MAP_FILES += \
-wifi-stm32nucleo.map \
+STM32Nucleo.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-wifi-stm32nucleo.list \
+STM32Nucleo.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: wifi-stm32nucleo.elf secondary-outputs
+main-build: STM32Nucleo.elf secondary-outputs
 
 # Tool invocations
-wifi-stm32nucleo.elf wifi-stm32nucleo.map: $(OBJS) $(USER_OBJS) /home/danie/Documents/Dev/Embedded/embedded-mcu-driver-dev/wifi-stm32nucleo/STM32C031C6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "wifi-stm32nucleo.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"/home/danie/Documents/Dev/Embedded/embedded-mcu-driver-dev/wifi-stm32nucleo/STM32C031C6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="wifi-stm32nucleo.map" -Wl,--gc-sections -static -specs=rdimon.specs -lc -lrdimon --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+STM32Nucleo.elf STM32Nucleo.map: $(OBJS) $(USER_OBJS) /home/danie/Projects/digital-clock/STM32Nucleo/STM32C031C6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "STM32Nucleo.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"/home/danie/Projects/digital-clock/STM32Nucleo/STM32C031C6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="STM32Nucleo.map" -Wl,--gc-sections -static -specs=rdimon.specs -lc -lrdimon --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -71,14 +71,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-wifi-stm32nucleo.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "wifi-stm32nucleo.list"
+STM32Nucleo.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "STM32Nucleo.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) default.size.stdout wifi-stm32nucleo.elf wifi-stm32nucleo.list wifi-stm32nucleo.map
+	-$(RM) STM32Nucleo.elf STM32Nucleo.list STM32Nucleo.map default.size.stdout
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)

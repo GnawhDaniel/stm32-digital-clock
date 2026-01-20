@@ -23,7 +23,6 @@ extern I2C_HandleTypeDef hi2c1;
 uint8_t ds1307_init()
 {
 	// Make clock halt = 0
-
 	uint8_t sec = ds1307_read(DS1307_ADDR_SEC);
 	sec &= ~(1 << 7);   // Clear CH
 
@@ -104,7 +103,6 @@ void ds1307_get_current_date(RTC_Date_t *rtc_date)
 
 static void ds1307_write(uint8_t value, uint8_t reg_address)
 {
-//	I2C_MasterSendData(&g_ds1307_I2CHandle, tx, 2, DS1307_I2C_ADDRESS, 0);
 	HAL_I2C_Mem_Write(
 	    &hi2c1,
 	    DS1307_I2C_ADDRESS,
@@ -114,15 +112,12 @@ static void ds1307_write(uint8_t value, uint8_t reg_address)
 	    1,
 	    1000
 	);
-//	HAL_I2C_Mem_Write(hi2c, DevAddress, MemAddress, MemAddSize, pData, Size, Timeout)
-//	printf("%d\n", status);
 }
 
 
 static uint8_t ds1307_read(uint8_t reg_address)
 {
 	uint8_t rx;
-//	I2C_MasterReceiveData(&g_ds1307_I2CHandle, &rx, 1, DS1307_I2C_ADDRESS, 0);
 	HAL_I2C_Mem_Read(
 	    &hi2c1,
 	    DS1307_I2C_ADDRESS,

@@ -11,10 +11,7 @@ def get_time():
     
     return jsonify({
         'datetime': now.strftime('%Y-%m-%d %H:%M:%S'),
-        'date': now.strftime('%Y-%m-%d'),
-        'time': now.strftime('%H:%M:%S'),
-        'timestamp': int(now.timestamp()),
-        'timezone': 'America/Chicago'  # Your timezone
+        'weekday': now.weekday()+1,
     })
 
 @app.route('/time/utc', methods=['GET'])

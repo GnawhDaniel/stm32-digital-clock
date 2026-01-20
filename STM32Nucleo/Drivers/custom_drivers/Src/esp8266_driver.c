@@ -43,6 +43,8 @@ static Clock parse_time_response(char* response)
 {
 	Clock clock = {0};
     char datetime[32] = {0};
+
+    char weekday;
     uint8_t month, date, hour, minute, second, year;
 
     char* json_start = strchr(response, '{');
@@ -54,7 +56,6 @@ static Clock parse_time_response(char* response)
     memcpy(datetime, dt, 19);
     datetime[19] = '\0';
 
-//    printf("%s\n", datetime);
     parse_datetime(
     		datetime,
     		&year,
@@ -71,6 +72,11 @@ static Clock parse_time_response(char* response)
     clock.time.seconds = second;
     clock.time.minutes = minute;
     clock.time.time_format = TIME_FORMAT_24HRS;
+
+    dt = strstr(json_start, "\"weekday\": ");
+    dt += strlen("\"weekday\": ");
+    weekday = *(dt);
+    clock.date.day = (uint8_t)(weekday - '0'); // Convert character number to uint8
 
     return clock;
 }
@@ -116,7 +122,7 @@ void esp8266ex_wifi_mode(UART_HandleTypeDef* huart, uint8_t cwmode)
 	}
 
 	char rcv_buf[256];
-	esp8266ex_send_command(huart, cmd, rcv_buf, sizeof(rcv_buf), 5000);
+	esp8266ex_send_command(huart, cmd, rcv_buf, sizeof(rcv_buf), 1000);
 }
 
 
@@ -129,7 +135,7 @@ void esp8266ex_connect_ap(UART_HandleTypeDef* huart, char* ssid, char* password)
 	         ssid, password);
 
 	char rcv_buf[256];
-	esp8266ex_send_command(huart, cmd, rcv_buf, sizeof(rcv_buf), 5000);
+	esp8266ex_send_command(huart, cmd, rcv_buf, sizeof(rcv_buf), 2000);
 }
 
 
@@ -155,7 +161,7 @@ void esp8266ex_cipstart(UART_HandleTypeDef* huart, char* connection_type, char* 
 			 connection_type,ip, port);
 
 	char rcv_buf[256];
-	esp8266ex_send_command(huart, cmd, rcv_buf, sizeof(rcv_buf), 5000);
+	esp8266ex_send_command(huart, cmd, rcv_buf, sizeof(rcv_buf), 2000);
 }
 
 
@@ -167,14 +173,14 @@ void esp8266ex_get_req(UART_HandleTypeDef* huart, char* query, char* rcv_buf, ui
 	snprintf(cmd, sizeof(cmd),
 	         "AT+CIPSEND=%d\r\n", sz);
 
-	esp8266ex_send_command(huart, cmd, rcv_buf, buf_sz, 5000);
+	esp8266ex_send_command(huart, cmd, rcv_buf, buf_sz, 1000);
 
 	snprintf(cmd, sizeof(cmd),
 	         "GET /%s HTTP/1.1\r\nHost: 192.168.40.252:5000\r\nConnection: close\r\n\r\n",
 			 query);
 
 	memset(rcv_buf, 0, buf_sz);
-	esp8266ex_send_command(huart, cmd, rcv_buf, buf_sz, 10000);
+	esp8266ex_send_command(huart, cmd, rcv_buf, buf_sz, 1000);
 }
 
 

@@ -1,0 +1,15 @@
+/*
+ * config_private.h
+ *
+ *  Created on: Jan 20, 2026
+ *      Author: danie
+ */
+
+#ifndef CUSTOM_DRIVERS_INC_CONFIG_PRIVATE_H_
+#define CUSTOM_DRIVERS_INC_CONFIG_PRIVATE_H_
+
+#define WIFI_SSID "ssid"
+#define WIFI_PASSWORD "password"
+#define SERVER_IP "192.168.x.x"
+
+#endif /* CUSTOM_DRIVERS_INC_CONFIG_PRIVATE_H_ */

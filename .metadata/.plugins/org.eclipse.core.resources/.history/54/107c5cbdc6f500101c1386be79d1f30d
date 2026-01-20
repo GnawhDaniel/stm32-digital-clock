@@ -1,0 +1,586 @@
+/* USER CODE BEGIN Header */
+/**
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2026 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include "esp8266ex_driver.h"
+#include "lcd.h"
+/* USER CODE END Includes */
+
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+#define WIFI_SSID "ssid"
+#define WIFI_PASSWD "password"
+#define SERVER_IP "192.168.x.x"
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+
+I2C_HandleTypeDef hi2c1;
+
+TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim14;
+
+UART_HandleTypeDef huart1;
+
+/* USER CODE BEGIN PV */
+extern void initialise_monitor_handles(void);
+RTC_Time_t current_time;
+RTC_Date_t current_date;
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART1_UART_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_TIM3_Init(void);
+static void MX_TIM14_Init(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+char* get_day_of_week(uint8_t i)
+{
+	char* days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+	return days[i-1];
+}
+
+
+void number_to_string(uint8_t num, char* buf)
+{
+	if(num < 10)
+	{
+		buf[0] = '0';
+		buf[1] = num + 48;
+	}
+	else if (num >= 10 && num < 99)
+	{
+		buf[0] = (num/10) + 48;
+		buf[1] = (num%10) + 48;
+	}
+}
+
+
+char* time_to_string(RTC_Time_t *rtc_time)
+{
+	static char buf[9]; // Static because of dangling pointer; once function pops out of stack the value is lost
+	buf[2] = ':';
+	buf[5] = ':';
+
+	number_to_string(rtc_time->hours, buf);
+	number_to_string(rtc_time->minutes, &buf[3]);
+	number_to_string(rtc_time->seconds, &buf[6]);
+
+	buf[8] = '\0';
+
+	return buf;
+
+}
+
+
+char* date_to_string(RTC_Date_t *rtc_date)
+{
+	static char buf[9]; // Static because of dangling pointer; once function pops out of stack the value is lost
+	buf[2] = '/';
+	buf[5] = '/';
+
+	number_to_string(rtc_date->month, buf);
+	number_to_string(rtc_date->date, &buf[3]);
+	number_to_string(rtc_date->year, &buf[6]);
+
+	return buf;
+}
+
+
+void delay_us(uint32_t us)
+{
+	__HAL_TIM_SET_COUNTER(&htim3, 0);
+	HAL_TIM_Base_Start(&htim3);
+	while (htim3.Instance->CNT < us);
+	HAL_TIM_Base_Stop(&htim3);
+}
+
+
+void get_time_wifi()
+{
+	esp8266ex_firmware_version(&huart1);
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	lcd_print_string("ESP8266 to mode:");
+	lcd_set_cursor(2,1);
+	lcd_print_string("Station");
+	esp8266ex_wifi_mode(&huart1, ESP8266EX_MODE_STATION);
+
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	lcd_print_string("Connecting to");
+	lcd_set_cursor(2,1);
+	lcd_print_string(WIFI_SSID);
+	esp8266ex_connect_ap(&huart1, WIFI_SSID, WIFI_PASSWD);
+
+	if(ds1307_init())
+	{
+		while(1); // TODO: Handle Failure
+	}
+	Clock clock;
+
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	lcd_print_string("Cnnctng srvr...");
+	esp8266ex_cipstart(&huart1, ESP8266EX_TRANSPORT_TCP, "192.168.40.252", 5000);
+
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	lcd_print_string("Getting time...");
+
+	clock = esp8266ex_get_time(&huart1);
+	current_time = clock.time;
+	current_date = clock.date;
+	current_date.day = MONDAY;
+	ds1307_set_current_date(&current_date);
+	ds1307_set_current_time(&current_time);
+}
+
+
+void TIM_IRQHandler()
+{
+	RTC_Time_t current_time;
+	RTC_Date_t current_date;
+
+	ds1307_get_current_time(&current_time);
+	ds1307_get_current_date(&current_date);
+
+	lcd_set_cursor(1,1);
+	char *am_pm;
+	if(current_time.time_format != TIME_FORMAT_24HRS)
+	{
+		am_pm = (current_time.time_format) ? "PM" : "AM";
+//		printf("Current time = %s %s\n", time_to_string(&current_time), am_pm);
+		lcd_print_string(time_to_string(&current_time));
+		lcd_print_string(am_pm);
+	}
+	else
+	{
+//		printf("Current time = %s\n", time_to_string(&current_time));
+		lcd_print_string(time_to_string(&current_time));
+	}
+
+
+//	printf("Current Date = %s <%s>\n", date_to_string(&current_date), get_day_of_week(current_date.day));
+	lcd_set_cursor(2, 1);
+	lcd_print_string(date_to_string(&current_date));
+	lcd_print_char('<');
+	lcd_print_string(get_day_of_week(current_date.day));
+	lcd_print_char('>');
+}
+/* USER CODE END 0 */
+
+/**
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void)
+{
+
+	/* USER CODE BEGIN 1 */
+
+	/* USER CODE END 1 */
+
+	/* MCU Configuration--------------------------------------------------------*/
+
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
+
+	/* USER CODE BEGIN Init */
+
+	/* USER CODE END Init */
+
+	/* Configure the system clock */
+	SystemClock_Config();
+
+	/* USER CODE BEGIN SysInit */
+
+	/* USER CODE END SysInit */
+
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_USART1_UART_Init();
+	MX_I2C1_Init();
+	MX_TIM3_Init();
+	MX_TIM14_Init();
+	/* USER CODE BEGIN 2 */
+	//  initialise_monitor_handles();
+
+	lcd_init();
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	HAL_Delay(2000);
+
+
+//#define INIT
+#ifdef INIT
+//	if(ds1307_init())
+//	{
+//		while(1);
+//	}
+//
+//	Clock clock;
+//	lcd_display_clear();
+//	lcd_set_cursor(1,1);
+//	lcd_print_string("Cnnctng srvr...");
+//	esp8266ex_cipstart(&huart1, ESP8266EX_TRANSPORT_TCP, "192.168.40.252", 5000);
+//	lcd_display_clear();
+//	lcd_set_cursor(1,1);
+//	lcd_print_string("Getting time...");
+//	clock = esp8266ex_get_time(&huart1);
+//
+//	current_time = clock.time;
+//	current_date = clock.date;
+//	current_date.day = MONDAY;
+//	ds1307_set_current_date(&current_date);
+//	ds1307_set_current_time(&current_time);
+	get_time_wifi();
+#endif
+
+	if (HAL_TIM_Base_Start_IT(&htim14) != HAL_OK)
+	{
+		/* Starting Error */
+		Error_Handler();
+	}
+	/* USER CODE END 2 */
+
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
+	while (1)
+	{
+		/* USER CODE END WHILE */
+
+		/* USER CODE BEGIN 3 */
+	}
+	/* USER CODE END 3 */
+}
+
+/**
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void)
+{
+	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+	__HAL_FLASH_SET_LATENCY(FLASH_LATENCY_1);
+
+	/** Initializes the RCC Oscillators according to the specified parameters
+	 * in the RCC_OscInitTypeDef structure.
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	/** Initializes the CPU, AHB and APB buses clocks
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+			|RCC_CLOCKTYPE_PCLK1;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
+	RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV1;
+
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+}
+
+/**
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C1_Init(void)
+{
+
+	/* USER CODE BEGIN I2C1_Init 0 */
+
+	/* USER CODE END I2C1_Init 0 */
+
+	/* USER CODE BEGIN I2C1_Init 1 */
+
+	/* USER CODE END I2C1_Init 1 */
+	hi2c1.Instance = I2C1;
+	hi2c1.Init.Timing = 0x10805D88;
+	hi2c1.Init.OwnAddress1 = 0;
+	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c1.Init.OwnAddress2 = 0;
+	hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	/** Configure Analogue filter
+	 */
+	if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	/** Configure Digital filter
+	 */
+	if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2C1_Init 2 */
+
+	/* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+ * @brief TIM3 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM3_Init(void)
+{
+
+	/* USER CODE BEGIN TIM3_Init 0 */
+
+	/* USER CODE END TIM3_Init 0 */
+
+	TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+	TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+	/* USER CODE BEGIN TIM3_Init 1 */
+
+	/* USER CODE END TIM3_Init 1 */
+	htim3.Instance = TIM3;
+	htim3.Init.Prescaler = 4799;
+	htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim3.Init.Period = 10000;
+	htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+	if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+	if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN TIM3_Init 2 */
+
+	/* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
+ * @brief TIM14 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM14_Init(void)
+{
+
+	/* USER CODE BEGIN TIM14_Init 0 */
+
+	/* USER CODE END TIM14_Init 0 */
+
+	/* USER CODE BEGIN TIM14_Init 1 */
+
+	/* USER CODE END TIM14_Init 1 */
+	htim14.Instance = TIM14;
+	htim14.Init.Prescaler = 0;
+	htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim14.Init.Period = 10000;
+	htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+	if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN TIM14_Init 2 */
+
+	/* USER CODE END TIM14_Init 2 */
+
+}
+
+/**
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART1_UART_Init(void)
+{
+
+	/* USER CODE BEGIN USART1_Init 0 */
+
+	/* USER CODE END USART1_Init 0 */
+
+	/* USER CODE BEGIN USART1_Init 1 */
+
+	/* USER CODE END USART1_Init 1 */
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = 115200;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	if (HAL_UART_Init(&huart1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN USART1_Init 2 */
+
+	/* USER CODE END USART1_Init 2 */
+
+}
+
+/**
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
+
+	/* USER CODE END MX_GPIO_Init_1 */
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOF_CLK_ENABLE();
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(Led_GPIO_Port, Led_Pin, GPIO_PIN_SET);
+
+	/*Configure GPIO pin : User_Button_Pin */
+	GPIO_InitStruct.Pin = User_Button_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(User_Button_GPIO_Port, &GPIO_InitStruct);
+
+	/*Configure GPIO pins : VCP_USART2_TX_Pin VCP_USART2_RX_Pin */
+	GPIO_InitStruct.Pin = VCP_USART2_TX_Pin|VCP_USART2_RX_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	GPIO_InitStruct.Alternate = GPIO_AF1_USART2;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : Led_Pin */
+	GPIO_InitStruct.Pin = Led_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	HAL_GPIO_Init(Led_GPIO_Port, &GPIO_InitStruct);
+
+	/* EXTI interrupt init*/
+	HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
+
+	/* USER CODE END MX_GPIO_Init_2 */
+}
+
+/* USER CODE BEGIN 4 */
+
+/* USER CODE END 4 */
+
+/**
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void)
+{
+	/* USER CODE BEGIN Error_Handler_Debug */
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+	while (1)
+	{
+	}
+	/* USER CODE END Error_Handler_Debug */
+}
+#ifdef USE_FULL_ASSERT
+/**
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
+void assert_failed(uint8_t *file, uint32_t line)
+{
+	/* USER CODE BEGIN 6 */
+	/* User can add his own implementation to report the file name and line number,
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	/* USER CODE END 6 */
+}
+#endif /* USE_FULL_ASSERT */

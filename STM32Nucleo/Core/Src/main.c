@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include "esp8266ex_driver.h"
 #include "lcd.h"
+#include "config_private.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,9 +34,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define WIFI_SSID "ssid"
-#define WIFI_PASSWD "password"
-#define SERVER_IP "192.168.x.x"
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -73,7 +71,7 @@ static void MX_TIM14_Init(void);
 /* USER CODE BEGIN 0 */
 char* get_day_of_week(uint8_t i)
 {
-	char* days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+	char* days[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 	return days[i-1];
 }
 
@@ -109,6 +107,7 @@ char* time_to_string(RTC_Time_t *rtc_time)
 
 }
 
+
 char* date_to_string(RTC_Date_t *rtc_date)
 {
 	static char buf[9]; // Static because of dangling pointer; once function pops out of stack the value is lost
@@ -127,9 +126,7 @@ void delay_us(uint32_t us)
 {
 	__HAL_TIM_SET_COUNTER(&htim3, 0);
 	HAL_TIM_Base_Start(&htim3);
-
 	while (htim3.Instance->CNT < us);
-
 	HAL_TIM_Base_Stop(&htim3);
 }
 
@@ -137,8 +134,19 @@ void delay_us(uint32_t us)
 void get_time_wifi()
 {
 	esp8266ex_firmware_version(&huart1);
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	lcd_print_string("ESP8266 to mode:");
+	lcd_set_cursor(2,1);
+	lcd_print_string("Station");
 	esp8266ex_wifi_mode(&huart1, ESP8266EX_MODE_STATION);
-	esp8266ex_connect_ap(&huart1, WIFI_SSID, WIFI_PASSWD);
+
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	lcd_print_string("Connecting to");
+	lcd_set_cursor(2,1);
+	lcd_print_string(WIFI_SSID);
+	esp8266ex_connect_ap(&huart1, WIFI_SSID, WIFI_PASSWORD);
 
 	if(ds1307_init())
 	{
@@ -148,7 +156,9 @@ void get_time_wifi()
 
 	lcd_display_clear();
 	lcd_set_cursor(1,1);
-	lcd_print_string("Cnnctng srvr...");
+	lcd_print_string("Connecting to");
+	lcd_set_cursor(2,1);
+	lcd_print_string(SERVER_IP);
 	esp8266ex_cipstart(&huart1, ESP8266EX_TRANSPORT_TCP, "192.168.40.252", 5000);
 
 	lcd_display_clear();
@@ -158,9 +168,37 @@ void get_time_wifi()
 	clock = esp8266ex_get_time(&huart1);
 	current_time = clock.time;
 	current_date = clock.date;
-	current_date.day = MONDAY;
 	ds1307_set_current_date(&current_date);
 	ds1307_set_current_time(&current_time);
+}
+
+
+void TIM_IRQHandler() // Called in stm32c0xx_it.c
+{
+	RTC_Time_t current_time;
+	RTC_Date_t current_date;
+
+	ds1307_get_current_time(&current_time);
+	ds1307_get_current_date(&current_date);
+
+	lcd_set_cursor(1,1);
+	char *am_pm;
+	if(current_time.time_format != TIME_FORMAT_24HRS)
+	{
+		am_pm = (current_time.time_format) ? "PM" : "AM";
+		lcd_print_string(time_to_string(&current_time));
+		lcd_print_string(am_pm);
+	}
+	else
+	{
+		lcd_print_string(time_to_string(&current_time));
+	}
+
+	lcd_set_cursor(2, 1);
+	lcd_print_string(date_to_string(&current_date));
+	lcd_print_char('<');
+	lcd_print_string(get_day_of_week(current_date.day));
+	lcd_print_char('>');
 }
 /* USER CODE END 0 */
 
@@ -198,67 +236,21 @@ int main(void)
 	MX_TIM3_Init();
 	MX_TIM14_Init();
 	/* USER CODE BEGIN 2 */
-	//  initialise_monitor_handles();
+
+//	initialise_monitor_handles(); // ONLY FOR DEBUGGING
 
 	lcd_init();
 	lcd_display_clear();
 	lcd_set_cursor(1,1);
-
-
-//#define INIT
-#ifdef INIT
-	if(ds1307_init())
-	{
-		while(1);
-	}
-
-	Clock clock;
-	lcd_display_clear();
-	lcd_set_cursor(1,1);
-	lcd_print_string("Cnnctng srvr...");
-	esp8266ex_cipstart(&huart1, ESP8266EX_TRANSPORT_TCP, "192.168.40.252", 5000);
-	lcd_display_clear();
-	lcd_set_cursor(1,1);
-	lcd_print_string("Getting time...");
-	clock = esp8266ex_get_time(&huart1);
-
-	current_time = clock.time;
-	current_date = clock.date;
-	current_date.day = MONDAY;
-	ds1307_set_current_date(&current_date);
-	ds1307_set_current_time(&current_time);
-#endif
-
-
 	HAL_Delay(2000);
 
-	ds1307_get_current_time(&current_time);
-	ds1307_get_current_date(&current_date);
 
-	char *am_pm;
+#define INIT
+#ifdef INIT
+	get_time_wifi();
+#endif
 	lcd_display_clear();
-	lcd_set_cursor(1,1);
-	if(current_time.time_format != TIME_FORMAT_24HRS)
-	{
-		am_pm = (current_time.time_format) ? "PM" : "AM";
-		//	  printf("Current time = %s %s\n", time_to_string(&current_time), am_pm);
-		lcd_print_string(time_to_string(&current_time));
-		lcd_print_string(am_pm);
-	}
-	else
-	{
-		//	  printf("Current time = %s\n", time_to_string(&current_time));
-		lcd_print_string(time_to_string(&current_time));
-
-	}
-
-	lcd_set_cursor(2, 1);
-	lcd_print_string(date_to_string(&current_date));
-	lcd_print_char('<');
-	lcd_print_string(get_day_of_week(current_date.day));
-	lcd_print_char('>');
-
-	if (HAL_TIM_Base_Start_IT(&htim14) != HAL_OK)
+	if (HAL_TIM_Base_Start_IT(&htim14) != HAL_OK) // Start global interrupt every 1 second
 	{
 		/* Starting Error */
 		Error_Handler();

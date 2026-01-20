@@ -25,10 +25,6 @@
 #include "esp8266ex_driver.h"
 #include <stdio.h>
 #include "lcd.h"
-extern void number_to_string(uint8_t num, char* buf);
-extern char* get_day_of_week(uint8_t i);
-extern char* time_to_string(RTC_Time_t *rtc_time);
-extern char* date_to_string(RTC_Date_t *rtc_date);
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,7 +50,11 @@ extern RTC_Date_t current_date;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-
+extern void number_to_string(uint8_t num, char* buf);
+extern char* get_day_of_week(uint8_t i);
+extern char* time_to_string(RTC_Time_t *rtc_time);
+extern char* date_to_string(RTC_Date_t *rtc_date);
+extern void TIM_IRQHandler();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -188,34 +188,7 @@ void TIM14_IRQHandler(void)
   /* USER CODE END TIM14_IRQn 0 */
   HAL_TIM_IRQHandler(&htim14);
   /* USER CODE BEGIN TIM14_IRQn 1 */
-	RTC_Time_t current_time;
-	RTC_Date_t current_date;
-
-	ds1307_get_current_time(&current_time);
-	ds1307_get_current_date(&current_date);
-
-	lcd_set_cursor(1,1);
-	char *am_pm;
-	if(current_time.time_format != TIME_FORMAT_24HRS)
-	{
-		am_pm = (current_time.time_format) ? "PM" : "AM";
-//		printf("Current time = %s %s\n", time_to_string(&current_time), am_pm);
-		lcd_print_string(time_to_string(&current_time));
-		lcd_print_string(am_pm);
-	}
-	else
-	{
-//		printf("Current time = %s\n", time_to_string(&current_time));
-		lcd_print_string(time_to_string(&current_time));
-	}
-
-
-//	printf("Current Date = %s <%s>\n", date_to_string(&current_date), get_day_of_week(current_date.day));
-	lcd_set_cursor(2, 1);
-	lcd_print_string(date_to_string(&current_date));
-	lcd_print_char('<');
-	lcd_print_string(get_day_of_week(current_date.day));
-	lcd_print_char('>');
+  TIM_IRQHandler();
   /* USER CODE END TIM14_IRQn 1 */
 }
 

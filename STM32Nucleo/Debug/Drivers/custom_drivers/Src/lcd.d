@@ -1,5 +1,5 @@
 Drivers/custom_drivers/Src/lcd.o: ../Drivers/custom_drivers/Src/lcd.c \
- /home/danie/Documents/Dev/Embedded/embedded-mcu-driver-dev/wifi-stm32nucleo/Drivers/custom_drivers/Inc/lcd.h \
+ /home/danie/Projects/digital-clock/STM32Nucleo/Drivers/custom_drivers/Inc/lcd.h \
  ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal.h \
  ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_ll_system.h \
  ../Drivers/CMSIS/Device/ST/STM32C0xx/Include/stm32c0xx.h \
@@ -32,7 +32,7 @@ Drivers/custom_drivers/Src/lcd.o: ../Drivers/custom_drivers/Src/lcd.c \
  ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_tim_ex.h \
  ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_uart.h \
  ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_uart_ex.h
-/home/danie/Documents/Dev/Embedded/embedded-mcu-driver-dev/wifi-stm32nucleo/Drivers/custom_drivers/Inc/lcd.h:
+/home/danie/Projects/digital-clock/STM32Nucleo/Drivers/custom_drivers/Inc/lcd.h:
 ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal.h:
 ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_ll_system.h:
 ../Drivers/CMSIS/Device/ST/STM32C0xx/Include/stm32c0xx.h:
