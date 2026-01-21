@@ -8,7 +8,7 @@ A DS1307 real-time clock (RTC) with a backup CMOS battery maintains accurate tim
 
 ## Demonstration
 ---
-<video src="media/live-demo.mov" width="320" height="240" controls></video>
+<video src="media/live-demo.mp4" width="320" height="240" controls></video>
 
 ## Components
 ---
