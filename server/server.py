@@ -1,3 +1,10 @@
+"""
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+FAIR DISCLAIMER:
+The majority of this Web API code was generated using an AI chat model.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+"""
+
 from flask import Flask, jsonify
 from datetime import datetime
 import pytz
@@ -11,7 +18,7 @@ def get_time():
     
     return jsonify({
         'datetime': now.strftime('%Y-%m-%d %H:%M:%S'),
-        'weekday': now.weekday()+1,
+        'weekday': now.weekday()+1, # Plus 1 to account array indexing in STM32
     })
 
 @app.route('/time/utc', methods=['GET'])
