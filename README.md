@@ -10,6 +10,14 @@ A DS1307 real-time clock (RTC) with a backup CMOS battery maintains accurate tim
 https://github.com/user-attachments/assets/be06e873-0dd8-48de-b1c8-ff269aef6ca1
 
 
+## Images
+<p align="center">
+  <img src="imgs/front.jpg" width="40%" />
+  <img src="imgs/top.jpg" width="40%" />
+</p>
+
+
+
 ## Components
 - STM32 Nucleo-C031C6
 - 16x2 LCD
