@@ -7,12 +7,10 @@ The system retrieves date and time data from a web API over a TCP connection usi
 A DS1307 real-time clock (RTC) with a backup CMOS battery maintains accurate timekeeping when the microcontroller is powered off.
 
 ## Demonstration
----
 https://github.com/user-attachments/assets/be06e873-0dd8-48de-b1c8-ff269aef6ca1
 
 
 ## Components
----
 - STM32 Nucleo-C031C6
 - 16x2 LCD
 - B10K Potentiometer
@@ -21,7 +19,6 @@ https://github.com/user-attachments/assets/be06e873-0dd8-48de-b1c8-ff269aef6ca1
 - DS1307 RTC Module (with CMOS battery)
 
 ## Wiring
----
 | From      | Pin  | To       | Pin | Signal |
 | --------- | ---- | -------- | --- | ------ | 
 | STM32C0   | PB0  | 16x2 LCD | RS  | GPIO   |
@@ -43,14 +40,12 @@ https://github.com/user-attachments/assets/be06e873-0dd8-48de-b1c8-ff269aef6ca1
 
 
 ## Interfaces
----
 - UART: ESP-01S Wi-Fi module (AT command interface)
 - I2C: DS1307 RTC
 - GPIO: 16×2 LCD (4-bit mode)
 
 
 ## Design Notes
----
 - Time synchronization is user-initiated via an external interrupt from the on-board button.
 - Timekeeping is maintained independently of network operations.
 - LCD screen operates in 4-bit mode.
