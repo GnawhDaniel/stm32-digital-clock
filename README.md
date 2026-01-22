@@ -12,8 +12,8 @@ https://github.com/user-attachments/assets/be06e873-0dd8-48de-b1c8-ff269aef6ca1
 
 ## Images
 <p align="center">
-  <img src="imgs/front.jpg" width="40%" />
-  <img src="imgs/top.jpg" width="40%" />
+  <img src="imgs/front.jpg" width="48%" />
+  <img src="imgs/top.jpg" width="48%" />
 </p>
 
 
