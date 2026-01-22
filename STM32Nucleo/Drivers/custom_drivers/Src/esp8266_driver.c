@@ -152,12 +152,12 @@ void esp8266ex_dns_resolve(UART_HandleTypeDef* huart, char* domain_name)
 }
 
 
-void esp8266ex_cipstart(UART_HandleTypeDef* huart, char* connection_type, char* ip, uint16_t port)
+void esp8266ex_cipstart(UART_HandleTypeDef* huart, char* connection_type, char* ip, char* port)
 {
 	char cmd[256];
 
 	snprintf(cmd, sizeof(cmd),
-	         "AT+CIPSTART=\"%s\",\"%s\",%d\r\n",
+	         "AT+CIPSTART=\"%s\",\"%s\",%s\r\n",
 			 connection_type,ip, port);
 
 	char rcv_buf[256];
@@ -169,16 +169,20 @@ void esp8266ex_get_req(UART_HandleTypeDef* huart, char* query, char* rcv_buf, ui
 {
 	char cmd[256];
 
-	uint8_t sz = 64 + strlen(query);
+	char ip[21];
+	strcpy(ip, SERVER_IP);
+	*(ip + strlen(SERVER_IP)) = ':';
+	strcpy(ip + strlen(SERVER_IP) + 1, SERVER_PORT); // -> xxx.xxx.xxx.xxx:xxxxx
+
+	uint8_t sz = 45 + strlen(query) + strlen(ip);
 	snprintf(cmd, sizeof(cmd),
 	         "AT+CIPSEND=%d\r\n", sz);
-
 	esp8266ex_send_command(huart, cmd, rcv_buf, buf_sz, 1000);
 
-	snprintf(cmd, sizeof(cmd),
-	         "GET /%s HTTP/1.1\r\nHost: 192.168.40.252:5000\r\nConnection: close\r\n\r\n",
-			 query);
 
+	snprintf(cmd, sizeof(cmd),
+	         "GET /%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+			 query, ip);
 	memset(rcv_buf, 0, buf_sz);
 	esp8266ex_send_command(huart, cmd, rcv_buf, buf_sz, 1000);
 }

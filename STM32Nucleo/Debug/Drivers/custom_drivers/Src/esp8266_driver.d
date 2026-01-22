@@ -33,6 +33,7 @@ Drivers/custom_drivers/Src/esp8266_driver.o: \
  ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_tim_ex.h \
  ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_uart.h \
  ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_uart_ex.h \
+ /home/danie/Projects/digital-clock/STM32Nucleo/Drivers/custom_drivers/Inc/config_private.h \
  /home/danie/Projects/digital-clock/STM32Nucleo/Drivers/custom_drivers/Inc/ds1307.h
 /home/danie/Projects/digital-clock/STM32Nucleo/Drivers/custom_drivers/Inc/esp8266ex_driver.h:
 ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal.h:
@@ -67,4 +68,5 @@ Drivers/custom_drivers/Src/esp8266_driver.o: \
 ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_tim_ex.h:
 ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_uart.h:
 ../Drivers/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal_uart_ex.h:
+/home/danie/Projects/digital-clock/STM32Nucleo/Drivers/custom_drivers/Inc/config_private.h:
 /home/danie/Projects/digital-clock/STM32Nucleo/Drivers/custom_drivers/Inc/ds1307.h:

@@ -9,6 +9,7 @@
 #define CUSTOM_DRIVERS_ESP8266EX_DRIVER_H_
 
 #include "stm32c0xx_hal.h"
+#include "config_private.h"
 #include "ds1307.h"
 #include "ds1307.h"
 
@@ -32,7 +33,7 @@ void esp8266ex_wifi_mode(UART_HandleTypeDef* huart, uint8_t cwmode);
 //tcp
 void esp8266ex_dns_resolve(UART_HandleTypeDef* huart, char* domain_name);
 void esp8266ex_get_ip_address(UART_HandleTypeDef* huart);
-void esp8266ex_cipstart(UART_HandleTypeDef* huart, char* connection_type, char* ip, uint16_t port);
+void esp8266ex_cipstart(UART_HandleTypeDef* huart, char* connection_type, char* ip, char* port);
 void esp8266ex_get_req(UART_HandleTypeDef* huart, char* query, char* rcv_buf, uint16_t buf_sz);
 Clock esp8266ex_get_time(UART_HandleTypeDef* huart);
 

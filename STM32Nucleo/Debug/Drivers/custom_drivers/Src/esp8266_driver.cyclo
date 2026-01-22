@@ -8,6 +8,6 @@
 ../Drivers/custom_drivers/Src/esp8266_driver.c:142:6:esp8266ex_dns_resolve	1
 ../Drivers/custom_drivers/Src/esp8266_driver.c:155:6:esp8266ex_cipstart	1
 ../Drivers/custom_drivers/Src/esp8266_driver.c:168:6:esp8266ex_get_req	1
-../Drivers/custom_drivers/Src/esp8266_driver.c:187:7:esp8266ex_get_time	1
-../Drivers/custom_drivers/Src/esp8266_driver.c:195:6:esp8266ex_firmware_version	1
-../Drivers/custom_drivers/Src/esp8266_driver.c:202:6:esp8266ex_get_ip_address	1
+../Drivers/custom_drivers/Src/esp8266_driver.c:191:7:esp8266ex_get_time	1
+../Drivers/custom_drivers/Src/esp8266_driver.c:199:6:esp8266ex_firmware_version	1
+../Drivers/custom_drivers/Src/esp8266_driver.c:206:6:esp8266ex_get_ip_address	1

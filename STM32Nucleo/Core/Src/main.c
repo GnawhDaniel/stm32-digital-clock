@@ -167,7 +167,7 @@ void get_time_wifi()
 	lcd_print_string("Connecting to");
 	lcd_set_cursor(2,1);
 	lcd_print_string(SERVER_IP);
-	esp8266ex_cipstart(&huart1, ESP8266EX_TRANSPORT_TCP, "192.168.40.252", 5000);
+	esp8266ex_cipstart(&huart1, ESP8266EX_TRANSPORT_TCP, SERVER_IP, SERVER_PORT);
 
 	lcd_display_clear();
 	lcd_set_cursor(1,1);
