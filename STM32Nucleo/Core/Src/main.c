@@ -49,6 +49,7 @@ I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim14;
+TIM_HandleTypeDef htim17;
 
 UART_HandleTypeDef huart1;
 
@@ -59,6 +60,7 @@ RTC_Date_t current_date;
 
 uint8_t is_fetching_data_from_server = FREE;
 uint8_t is_update_digital_clock = FREE;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -68,6 +70,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM14_Init(void);
+static void MX_TIM17_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -241,10 +244,10 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM3_Init();
   MX_TIM14_Init();
+  MX_TIM17_Init();
   /* USER CODE BEGIN 2 */
 
 //	initialise_monitor_handles(); // ONLY FOR DEBUGGING
-
 	lcd_init();
 	lcd_display_clear();
 	lcd_set_cursor(1,1);
@@ -269,6 +272,8 @@ int main(void)
 	while (1)
 	{
     /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
 		if(is_fetching_data_from_server == BUSY)
 		{
 			get_time_wifi();
@@ -281,8 +286,6 @@ int main(void)
 			update_digital_clock();
 			is_update_digital_clock = FREE;
 		}
-
-    /* USER CODE BEGIN 3 */
 	}
   /* USER CODE END 3 */
 }
@@ -448,6 +451,38 @@ static void MX_TIM14_Init(void)
 }
 
 /**
+  * @brief TIM17 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM17_Init(void)
+{
+
+  /* USER CODE BEGIN TIM17_Init 0 */
+
+  /* USER CODE END TIM17_Init 0 */
+
+  /* USER CODE BEGIN TIM17_Init 1 */
+
+  /* USER CODE END TIM17_Init 1 */
+  htim17.Instance = TIM17;
+  htim17.Init.Prescaler = 48000-1;
+  htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim17.Init.Period = 65535;
+  htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim17.Init.RepetitionCounter = 0;
+  htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim17) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM17_Init 2 */
+
+  /* USER CODE END TIM17_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -518,7 +553,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : User_Button_Pin */
   GPIO_InitStruct.Pin = User_Button_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(User_Button_GPIO_Port, &GPIO_InitStruct);
 
@@ -553,13 +588,32 @@ void TIM_IRQHandler() // Called in stm32c0xx_it.c
 }
 
 
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+	if (GPIO_Pin == User_Button_Pin)
+	{
+		// Start TIM17
+		__HAL_TIM_SET_COUNTER(&htim17, 0);
+		HAL_TIM_Base_Start(&htim17);
+	}
+}
+
+
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 {
+	uint32_t elapsed_time = htim17.Instance->CNT; // elapsed_time(ms)
+//	printf("Time elapsed: %lu\n", elapsed_time);
 	if(GPIO_Pin == User_Button_Pin)
 	{
-//		printf("test\n");
-//		get_time_wifi();
-		is_fetching_data_from_server = BUSY;
+		if (elapsed_time < 3000)
+		{
+			// TODO: Implement other modes (temperature,humidity, etc.)
+		}
+		else if (elapsed_time < 10000) // 3-10 seconds
+		{
+			is_fetching_data_from_server = BUSY;
+		}
+		HAL_TIM_Base_Stop(&htim17);
 	}
 }
 /* USER CODE END 4 */
