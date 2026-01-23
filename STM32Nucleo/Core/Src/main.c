@@ -36,6 +36,9 @@
 /* USER CODE BEGIN PD */
 #define BUSY 1
 #define FREE 0
+
+#define MODE_TIME		0
+#define MODE_WEATHER	1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,13 +57,18 @@ TIM_HandleTypeDef htim17;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-extern void initialise_monitor_handles(void);
 RTC_Time_t current_time;
 RTC_Date_t current_date;
 
+Weather weather;
+
 uint8_t is_fetching_data_from_server = FREE;
 uint8_t is_update_digital_clock = FREE;
+uint8_t is_update_weather = FREE;
 
+uint8_t modes[2] = {MODE_TIME, MODE_WEATHER};
+uint8_t current_mode_index = 0;
+uint8_t mode_changed = 0; // Used to clear LCD screen one time upon mode changes
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -72,7 +80,7 @@ static void MX_TIM3_Init(void);
 static void MX_TIM14_Init(void);
 static void MX_TIM17_Init(void);
 /* USER CODE BEGIN PFP */
-
+extern void initialise_monitor_handles(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -139,9 +147,9 @@ void delay_us(uint32_t us)
 }
 
 
-void get_time_wifi()
+void initialize_wifi()
 {
-//	esp8266ex_firmware_version(&huart1);
+	//	esp8266ex_firmware_version(&huart1);
 	lcd_display_clear();
 	lcd_set_cursor(1,1);
 	lcd_print_string("ESP8266 to mode:");
@@ -155,7 +163,11 @@ void get_time_wifi()
 	lcd_set_cursor(2,1);
 	lcd_print_string(WIFI_SSID);
 	esp8266ex_connect_ap(&huart1, WIFI_SSID, WIFI_PASSWORD);
+}
 
+
+void get_time_wifi()
+{
 	if(ds1307_init())
 	{
 		while(1); // TODO: Handle Failure
@@ -178,6 +190,26 @@ void get_time_wifi()
 	current_date = clock.date;
 	ds1307_set_current_date(&current_date);
 	ds1307_set_current_time(&current_time);
+}
+
+
+void get_weather_wifi()
+{
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	lcd_print_string("Connecting to");
+	lcd_set_cursor(2,1);
+	lcd_print_string(SERVER_IP);
+	esp8266ex_cipstart(&huart1, ESP8266EX_TRANSPORT_TCP, SERVER_IP, SERVER_PORT);
+
+	lcd_display_clear();
+	lcd_set_cursor(1,1);
+	lcd_print_string("Getting weather");
+	lcd_set_cursor(2,1);
+	lcd_print_string("from ");
+	lcd_print_string(ZIP_CODE);
+
+	weather = esp8266ex_get_weather(&huart1);
 }
 
 
@@ -207,6 +239,19 @@ void update_digital_clock()
 	lcd_print_char('<');
 	lcd_print_string(get_day_of_week(current_date.day));
 	lcd_print_char('>');
+}
+
+
+void update_weather()
+{
+	lcd_set_cursor(1,1);
+	lcd_print_string("Temp: ");
+	lcd_print_string(weather.temperature);
+	lcd_print_string("F");
+
+	lcd_set_cursor(2,1);
+	lcd_print_string("Humidity: ");
+	lcd_print_string(weather.humidity);
 }
 
 /* USER CODE END 0 */
@@ -249,17 +294,13 @@ int main(void)
 
 //	initialise_monitor_handles(); // ONLY FOR DEBUGGING
 	lcd_init();
+	HAL_Delay(2000);
 	lcd_display_clear();
 	lcd_set_cursor(1,1);
-	HAL_Delay(2000);
 
+//	initialize_wifi();
 
-//#define INIT
-#ifdef INIT
-	get_time_wifi();
-#endif
 	lcd_display_clear();
-
 	if (HAL_TIM_Base_Start_IT(&htim14) != HAL_OK) // Start global interrupt every 1 second
 	{
 		/* Starting Error */
@@ -274,17 +315,35 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		if(mode_changed)
+		{
+			lcd_display_clear();
+			mode_changed = 0;
+		}
+
 		if(is_fetching_data_from_server == BUSY)
 		{
 			get_time_wifi();
+			get_weather_wifi();
+
 			is_fetching_data_from_server = FREE;
 			lcd_display_clear();
 			lcd_set_cursor(1,1);
 		}
-		else if (is_fetching_data_from_server == FREE && is_update_digital_clock == BUSY)
+		else if (is_fetching_data_from_server == FREE)
 		{
-			update_digital_clock();
-			is_update_digital_clock = FREE;
+			if(modes[current_mode_index] == MODE_TIME)
+			{
+				if(is_update_digital_clock == BUSY)
+				{
+					update_digital_clock();
+					is_update_digital_clock = FREE;
+				}
+			}
+			else if(modes[current_mode_index] == MODE_WEATHER)
+			{
+				update_weather();
+			}
 		}
 	}
   /* USER CODE END 3 */
@@ -584,7 +643,9 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void TIM_IRQHandler() // Called in stm32c0xx_it.c
 {
-	is_update_digital_clock = BUSY;
+	if(is_update_digital_clock == FREE && (modes[current_mode_index] == MODE_TIME))
+		is_update_digital_clock = BUSY;
+//	if(is_update_weather == FREE) is_update_weather = BUSY;
 }
 
 
@@ -602,12 +663,13 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 {
 	uint32_t elapsed_time = htim17.Instance->CNT; // elapsed_time(ms)
-//	printf("Time elapsed: %lu\n", elapsed_time);
 	if(GPIO_Pin == User_Button_Pin)
 	{
 		if (elapsed_time < 3000)
 		{
-			// TODO: Implement other modes (temperature,humidity, etc.)
+			(++current_mode_index);
+			current_mode_index %= sizeof(modes);
+			mode_changed = 1;
 		}
 		else if (elapsed_time < 10000) // 3-10 seconds
 		{

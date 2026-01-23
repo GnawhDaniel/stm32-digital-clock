@@ -15,4 +15,7 @@
 #define WIFI_PASSWORD "<password>"
 #define SERVER_IP "x.x.x.x"
 
+// For Weather API
+#define ZIP_CODE "xxxxx"
+
 #endif /* CUSTOM_DRIVERS_INC_CONFIG_PRIVATE_H_ */

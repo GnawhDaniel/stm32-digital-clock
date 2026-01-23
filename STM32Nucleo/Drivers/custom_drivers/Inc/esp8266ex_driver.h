@@ -21,6 +21,14 @@ typedef struct
 } Clock;
 
 
+typedef struct
+{
+	char humidity[8];
+	char precip[8];
+	char temperature[8];
+} Weather;
+
+
 // general
 void esp8266ex_firmware_version(UART_HandleTypeDef* huart);
 void esp8266ex_send_command(UART_HandleTypeDef* huart, char* cmd, char* rcv_buf, uint16_t buf_sz, uint32_t timeout);
@@ -36,6 +44,7 @@ void esp8266ex_get_ip_address(UART_HandleTypeDef* huart);
 void esp8266ex_cipstart(UART_HandleTypeDef* huart, char* connection_type, char* ip, char* port);
 void esp8266ex_get_req(UART_HandleTypeDef* huart, char* query, char* rcv_buf, uint16_t buf_sz);
 Clock esp8266ex_get_time(UART_HandleTypeDef* huart);
+Weather esp8266ex_get_weather(UART_HandleTypeDef* huart);
 
 
 #define ESP8266EX_MODE_NULL				0

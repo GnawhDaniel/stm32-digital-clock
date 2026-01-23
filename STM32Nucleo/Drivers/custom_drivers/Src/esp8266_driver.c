@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "esp8266ex_driver.h"
+#include "config_private.h"
 
 
 static uint16_t atoi_n(const char *s, uint8_t n)
@@ -79,6 +80,38 @@ static Clock parse_time_response(char* response)
     clock.date.day = (uint8_t)(weekday - '0'); // Convert character number to uint8
 
     return clock;
+}
+
+
+static Weather parse_weather_response(char* response)
+{
+//	printf("%s\n", response);
+	Weather w = {0};
+
+	char* json_start = strchr(response, '{');
+
+    char* ptr_start = strstr(json_start, "\"humidity\": ");
+    if (!ptr_start) return w;
+
+    // Parsing String Response
+    ptr_start += strlen("\"humidity\": ");
+    char* ptr_end = strstr(ptr_start, ",");
+    uint8_t sz = (uint8_t)(ptr_end - ptr_start);
+    memcpy(w.humidity, ptr_start, sz);
+
+    ptr_start = strstr(ptr_start, "\"precip_in\": ");
+    ptr_start += strlen("\"precip_in\": ");
+    ptr_end = strstr(ptr_start, ",");
+    sz = (uint8_t)(ptr_end - ptr_start);
+    memcpy(w.precip, ptr_start, sz);
+
+    ptr_start = strstr(ptr_start, "\"temp_f\": ");
+    ptr_start += strlen("\"temp_f\": ");
+    ptr_end = strstr(ptr_start, "\n");
+    sz = (uint8_t)(ptr_end - ptr_start);
+    memcpy(w.temperature, ptr_start, sz);
+
+	return w;
 }
 
 
@@ -168,8 +201,8 @@ void esp8266ex_cipstart(UART_HandleTypeDef* huart, char* connection_type, char* 
 void esp8266ex_get_req(UART_HandleTypeDef* huart, char* query, char* rcv_buf, uint16_t buf_sz)
 {
 	char cmd[256];
-
 	char ip[21];
+
 	strcpy(ip, SERVER_IP);
 	*(ip + strlen(SERVER_IP)) = ':';
 	strcpy(ip + strlen(SERVER_IP) + 1, SERVER_PORT); // -> xxx.xxx.xxx.xxx:xxxxx
@@ -177,9 +210,10 @@ void esp8266ex_get_req(UART_HandleTypeDef* huart, char* query, char* rcv_buf, ui
 	uint8_t sz = 45 + strlen(query) + strlen(ip);
 	snprintf(cmd, sizeof(cmd),
 	         "AT+CIPSEND=%d\r\n", sz);
-	esp8266ex_send_command(huart, cmd, rcv_buf, buf_sz, 1000);
+	esp8266ex_send_command(huart, cmd, rcv_buf, buf_sz, 2000);
 
 
+	memset(cmd, 0, 256);
 	snprintf(cmd, sizeof(cmd),
 	         "GET /%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
 			 query, ip);
@@ -193,6 +227,17 @@ Clock esp8266ex_get_time(UART_HandleTypeDef* huart)
 	char res[1028];
 	esp8266ex_get_req(huart, "time", res, sizeof(res));
 	return parse_time_response(res);
+}
+
+
+Weather esp8266ex_get_weather(UART_HandleTypeDef* huart)
+{
+	char res[512];
+	char req[13] = "weather/";
+	char req2[] = ZIP_CODE;
+	strcat(req, req2);
+	esp8266ex_get_req(huart, req, res, sizeof(res));
+	return parse_weather_response(res);
 }
 
 

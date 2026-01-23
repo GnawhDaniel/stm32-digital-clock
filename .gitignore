@@ -1,2 +1,4 @@
 config_private.h
 .metadata
+.venv/
+server/.env
