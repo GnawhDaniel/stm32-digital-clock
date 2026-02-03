@@ -2,3 +2,4 @@ config_private.h
 .metadata
 .venv/
 server/.env
+STM32Nucleo/Debug
